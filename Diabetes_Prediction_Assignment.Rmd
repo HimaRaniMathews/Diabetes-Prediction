@@ -1,0 +1,125 @@
+---
+title: "Data Visulization DA2"
+author: "Hima Rani Mathews 19BCE1532"
+date: '2022-04-12'
+output: html_document
+---
+
+## IMPORTING DATASET
+```{r}
+data<-read.csv("diabetes.csv")
+head(data,10)
+str(data)
+dim(data)
+summary(data)
+```
+
+
+### Finding if there is any null values
+```{r}
+any(is.na(data))
+```
+
+## DATA PREPROCESSING NAD CLEANING
+### Count the number of 0 values in Glucose, Blood Pressure, Skin Thickness, BMI, and Insulin
+```{r}
+library(dplyr)
+data %>%
+filter(Glucose==0)%>%
+count()
+data %>% 
+filter(BloodPressure==0) %>%
+count()
+data %>%
+filter(SkinThickness==0)%>%
+count()
+data %>% 
+filter(BMI==0) %>%
+count()
+data %>% 
+filter(Insulin==0) %>%
+count()
+```
+
+
+### Lots of cell have value as '0' hence replacing it with Median of each attribute
+```{r}
+
+diabetes<-data %>%
+mutate(Glucose = ifelse(Glucose == 0, 117.0, Glucose), 
+       BloodPressure= ifelse(BloodPressure==0, 72.00, BloodPressure),
+       BMI= ifelse(BMI ==0,32.00, BMI),
+       SkinThickness= ifelse(SkinThickness ==0, 23.00, SkinThickness),
+       Insulin = ifelse(Insulin == 0, 30.5, Insulin))
+```
+
+### Changing the label names
+```{r}
+diabetes$DiabetesResult <- factor(diabetes$Outcome, levels = c("0", "1"), labels = c("negative", "positive"))
+head(diabetes)
+```
+
+## VISULIZATIONS
+```{r}
+diabetes_result <- diabetes %>%
+group_by (DiabetesResult) %>%
+count(DiabetesResult)
+diabetes_result
+```
+
+```{r}
+library(ggplot2)
+ggplot(data=diabetes_result) + geom_col(mapping=aes(x=DiabetesResult, y= n, fill=DiabetesResult)) +labs(title="Number of positive and negative diabetes cases", x= "Outcome", y = "Count")
+```
+
+
+## MULTIVARIATE ANALYSIS
+### (a) PAIRPLOT
+```{r}
+pairs(diabetes[, 1:8],col=diabetes$DiabetesResult,main="PairPlot")
+
+```
+
+### (b) GGPAIR
+Well, Pregnancies, Insulin, DBF and Age having skewed distribution.
+```{r}
+library(GGally)
+ggpairs(diabetes[, 1:8], aes(color = diabetes$DiabetesResult),title="correlogram with ggpairs()")  +theme_bw()
+```
+
+### (c) CORRELATION MATRIX
+```{r}
+library("ggcorrplot")
+corr <- round(cor(diabetes[, 1:8]), 1)
+ggcorrplot(corr,
+           hc.order = TRUE, type = "lower",
+           color = c("#FC4E07", "white", "#00AFBB"),
+           outline.col = "white", lab = TRUE)
+```
+
+### (d)SCATTERPLOT MATRIX
+```{r}
+library(lattice)
+splom(~diabetes[, 1:8], col=diabetes$DiabetesResult, data = diabetes)
+```
+
+### (e)Principal component analysis
+```{r}
+library("factoextra")
+my_data <- diabetes[, 1:8] 
+res.pca <- prcomp(my_data, scale = TRUE)
+fviz_pca_biplot(res.pca, col.ind = diabetes$DiabetesResult,
+                palette = "jco", geom = "point")
+```
+
+### (f)Cluster analysis
+```{r}
+library(factoextra)
+library(pheatmap)
+diabetes[, 1:8]  %>%
+   scale() %>%                  # Scale variables
+  t() %>%                      # Transpose 
+  pheatmap(cutree_cols = 4) 
+```
+
+
